@@ -22,10 +22,12 @@ def create_app(config_name='development'):
     from app.routes.health import health_bp
     from app.routes.auth import auth_bp
     from app.routes.resume import resume_bp
+    from app.routes.gemini import gemini_bp  
 
     app.register_blueprint(health_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(resume_bp, url_prefix="/resume")
+    app.register_blueprint(gemini_bp, url_prefix='/gemini')  
 
     # Import models so SQLAlchemy creates tables
     from app.models import User, SkillProfile, LearningLog, JobCache, ScoreHistory
