@@ -26,7 +26,7 @@ def get_skills_for_role(role: str) -> dict:
             "source": "cache"
         }
 
-    skills = _call_gemini(role_normalized)
+    skills, source = _call_gemini(role_normalized)
 
     new_cache = JobCache(
         role_name=role_normalized,
@@ -37,13 +37,13 @@ def get_skills_for_role(role: str) -> dict:
 
     return {
         "skills": skills,
-        "source": "gemini"
+        "source": source
     }
 
 
-def _call_gemini(role: str) -> list:
+def _call_gemini(role: str) -> tuple:
     api_key = current_app.config['GEMINI_API_KEY']
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key={api_key}"
 
     prompt = f"""You are a job market expert. List the top 15 technical skills required for a "{role}" job in 2025.
 
@@ -61,19 +61,22 @@ Skills for {role}:"""
 
         if response.status_code == 429:
             print("Rate limited — using mock skills")
-            return _get_mock_skills(role)
+            return _get_mock_skills(role), "mock"
 
+        print(f"Gemini status: {response.status_code}")
+        print(f"Gemini response: {response.text}")
         response.raise_for_status()
+
         data = response.json()
         raw_text = data["candidates"][0]["content"]["parts"][0]["text"]
         cleaned = raw_text.strip()
         cleaned = re.sub(r'^```json\s*', '', cleaned)
         cleaned = re.sub(r'\s*```$', '', cleaned)
-        return json.loads(cleaned)
+        return json.loads(cleaned), "gemini"
 
     except Exception as e:
         print(f"Gemini call failed: {e} — using mock skills")
-        return _get_mock_skills(role)
+        return _get_mock_skills(role), "mock"
 
 
 def _get_mock_skills(role: str) -> list:

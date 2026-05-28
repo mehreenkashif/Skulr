@@ -9,6 +9,12 @@ from app.models.score_history import ScoreHistory
 from app.ml.knn import run_knn_analysis
 from app.ml.logistic_regression import calculate_readiness_score
 
+from app.ml.decision_tree import rank_skill_gaps
+from app.ml.kmeans import cluster_learning_logs
+from app.models.learning_log import LearningLog
+from app.models.job_cache import JobCache
+import json
+
 ml_bp = Blueprint('ml', __name__, url_prefix='/ml')
 
 
@@ -95,3 +101,68 @@ def score_history():
             } for h in history
         ]
     }), 200
+@ml_bp.route('/skill-priority', methods=['POST'])
+@jwt_required()
+def skill_priority():
+    """Decision Tree: return ranked skill gaps for current user."""
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+
+    if not user or not user.target_role:
+        return jsonify({'error': 'Set a target role first via /ml/analyze'}), 400
+
+    user_skills = [
+        sp.skill_name
+        for sp in SkillProfile.query.filter_by(user_id=user_id).all()
+    ]
+
+    cached = JobCache.query.filter_by(
+        role_name=user.target_role.lower()
+    ).first()
+
+    if not cached:
+        return jsonify({
+            'error': 'No job data cached for this role — call /ml/analyze first'
+        }), 404
+
+    job_skills = (
+        json.loads(cached.required_skills)
+        if isinstance(cached.required_skills, str)
+        else cached.required_skills
+    )
+
+    ranked = rank_skill_gaps(user_skills, job_skills)
+
+    return jsonify({
+        'role': user.target_role,
+        'total_missing': len(ranked),
+        'ranked_gaps': ranked
+    }), 200
+
+
+@ml_bp.route('/cluster-logs', methods=['POST'])
+@jwt_required()
+def cluster_logs():
+    """K-Means: cluster this user's learning log entries by topic."""
+    user_id = get_jwt_identity()
+
+    logs = LearningLog.query.filter_by(user_id=user_id)\
+        .order_by(LearningLog.created_at.desc()).all()
+
+    if not logs:
+        return jsonify({
+            'message': 'No learning logs found — add entries first',
+            'clusters': []
+        }), 200
+
+    entries = [
+        {
+            'id': log.id,
+            'entry': log.entry,
+            'created_at': str(log.created_at)
+        }
+        for log in logs
+    ]
+
+    result = cluster_learning_logs(entries)
+    return jsonify(result), 200
