@@ -13,6 +13,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     # GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
     GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
+    GROQ_API_KEY   = os.environ.get('GROQ_API_KEY', '')
     CORS_ORIGINS = os.environ.get('CORS_ORIGINS', 'http://localhost:5173').split(',')
 
 class DevelopmentConfig(Config):

@@ -7,7 +7,7 @@ CORE_SKILLS = {
     'machine learning', 'deep learning', 'docker', 'aws', 'git',
     'typescript', 'postgresql', 'mongodb', 'rest api', 'flask', 'django'
 }
-
+          
 def rank_skill_gaps(user_skills, job_skills):
     """
     Decision Tree: rank missing skills by learning priority.

@@ -2,9 +2,9 @@ import axios from 'axios'
 
 const API = 'http://127.0.0.1:5000'
 
-const setToken = (token) => localStorage.setItem('skulr_token', token)
-const getToken = () => localStorage.getItem('skulr_token')
-const removeToken = () => localStorage.removeItem('skulr_token')
+const setToken    = (token) => localStorage.setItem('skulr_token', token)
+const getToken    = ()      => localStorage.getItem('skulr_token')
+const removeToken = ()      => localStorage.removeItem('skulr_token')
 
 const authAxios = axios.create({ baseURL: API })
 authAxios.interceptors.request.use((config) => {
@@ -25,8 +25,8 @@ const login = async (email, password) => {
   return res.data
 }
 
-const logout = () => removeToken()
-const getMe = async () => { const res = await authAxios.get('/auth/me'); return res.data }
+const logout  = () => removeToken()
+const getMe   = async () => { const res = await authAxios.get('/auth/me'); return res.data }
 const isLoggedIn = () => !!getToken()
 
 export default { register, login, logout, getMe, isLoggedIn, getToken, authAxios }
